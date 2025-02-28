@@ -1,0 +1,88 @@
+@startuml
+
+' Define the diagram layout
+top to bottom direction
+skinparam componentStyle rectangle
+
+' Define node types
+skinparam rectangle {
+  BackgroundColor<<Client>> LightBlue
+  BorderColor<<Client>> DarkBlue
+}
+
+skinparam rectangle {
+  BackgroundColor<<Service>> LightGreen
+  BorderColor<<Service>> DarkGreen
+}
+
+skinparam database {
+  BackgroundColor LightYellow
+  BorderColor DarkOrange
+}
+
+' Client Applications
+rectangle "Mobile App" as MobileApp <<Client>>
+rectangle "Web App" as WebApp <<Client>>
+rectangle "3rd Party App" as ThirdPartyApp <<Client>>
+
+' API Gateway
+rectangle "GraphQL Federation Gateway" as Gateway
+
+' Internal Services
+rectangle "User Service\n(Spring WebFlux + DGS)" as UserService <<Service>>
+rectangle "Event Service\n(Spring WebFlux + DGS)" as EventService <<Service>>
+rectangle "Prediction Service\n(Spring WebFlux + DGS)" as PredictionService <<Service>>
+rectangle "Betting Service\n(Spring WebFlux + DGS)" as BettingService <<Service>>
+rectangle "Notification Service\n(Spring WebFlux + DGS)" as NotificationService <<Service>>
+rectangle "Reporting Service\n(Spring WebFlux + DGS)" as ReportingService <<Service>>
+
+' Data Storage
+database "User DB" as UserDB
+database "Event DB" as EventDB
+database "Prediction DB" as PredictionDB
+database "Betting DB" as BettingDB
+database "Notification DB" as NotificationDB
+database "Reporting DB" as ReportingDB
+
+' Message Broker
+rectangle "Apache Kafka" as Kafka
+
+' External API connections (GraphQL)
+MobileApp -down-> Gateway : GraphQL
+WebApp -down-> Gateway : GraphQL
+ThirdPartyApp -down-> Gateway : GraphQL
+
+Gateway -down-> UserService : GraphQL\nFederation
+Gateway -down-> EventService : GraphQL\nFederation
+Gateway -down-> PredictionService : GraphQL\nFederation
+Gateway -down-> BettingService : GraphQL\nFederation
+Gateway -down-> NotificationService : GraphQL\nFederation
+Gateway -down-> ReportingService : GraphQL\nFederation
+
+' Service to DB connections
+UserService -down-> UserDB : R2DBC
+EventService -down-> EventDB : R2DBC
+PredictionService -down-> PredictionDB : R2DBC
+BettingService -down-> BettingDB : R2DBC
+NotificationService -down-> NotificationDB : Reactive MongoDB
+ReportingService -down-> ReportingDB : R2DBC
+
+' Kafka connections
+UserService -down-> Kafka : Pub/Sub
+EventService -down-> Kafka : Pub/Sub
+PredictionService -down-> Kafka : Pub/Sub
+BettingService -down-> Kafka : Pub/Sub
+Kafka -up-> NotificationService : Consume
+Kafka -up-> ReportingService : Consume
+
+' gRPC connections (using dashed lines)
+PredictionService ...> EventService : gRPC
+BettingService ...> PredictionService : gRPC
+BettingService ...> UserService : gRPC
+NotificationService ...> UserService : gRPC
+ReportingService ...> UserService : gRPC
+ReportingService ...> EventService : gRPC
+ReportingService ...> PredictionService : gRPC
+ReportingService ...> BettingService : gRPC
+
+@enduml

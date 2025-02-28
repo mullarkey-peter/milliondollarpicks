@@ -1,0 +1,4 @@
+// settings.gradle
+rootProject.name = 'million-dollar-picks'
+
+include 'user-service'
