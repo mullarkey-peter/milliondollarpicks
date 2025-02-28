@@ -31,8 +31,8 @@ public class UserResolver {
      * Query to fetch user by ID
      */
     @DgsQuery
-    public UserDto userById(@InputArgument Long id) {
-        return userService.findUserById(id);
+    public UserDto userById(@InputArgument String id) {
+        return userService.findUserById(Long.parseLong(id));
     }
 
     /**

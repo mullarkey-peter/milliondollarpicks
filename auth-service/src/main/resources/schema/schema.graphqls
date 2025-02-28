@@ -1,0 +1,33 @@
+scalar DateTime
+
+extend type Query {
+    validateToken(token: String!): Boolean
+    me(token: String!): UserReference
+}
+
+extend type Mutation {
+    login(username: String!, password: String!): AuthResponse
+    logout(token: String!): AuthResponse
+    resetPassword(username: String!, newPassword: String!): Boolean
+    createCredentials(username: String!, password: String!, userId: ID!): Credentials
+}
+
+type AuthResponse {
+    token: String
+    userId: ID
+    username: String
+    success: Boolean!
+    message: String
+}
+
+type Credentials {
+    id: ID!
+    username: String!
+    userId: ID!
+    accountLocked: Boolean
+}
+
+type UserReference @key(fields: "id") {
+    id: ID!
+    username: String!
+}

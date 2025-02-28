@@ -1,16 +1,16 @@
 scalar DateTime
 
-type Query {
+extend type Query {
     userById(id: ID!): User
     userByUsername(username: String!): User
 }
 
-type Mutation {
+extend type Mutation {
     updateLastLogin(username: String!): User
     createOrUpdateUser(username: String!): User
 }
 
-type User {
+type User @key(fields: "id") {
     id: ID!
     username: String!
     registrationDate: DateTime
