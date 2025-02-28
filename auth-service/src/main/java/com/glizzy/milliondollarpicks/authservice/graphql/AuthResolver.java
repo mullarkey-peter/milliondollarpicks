@@ -9,12 +9,14 @@ import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.InputArgument;
+import graphql.schema.DataFetchingEnvironment;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @DgsComponent
 @RequiredArgsConstructor
@@ -25,14 +27,23 @@ public class AuthResolver {
     private String jwtSecret;
 
     @DgsQuery
-    public Boolean validateToken(@InputArgument String token) {
+    public Boolean validateToken(@InputArgument String token, DataFetchingEnvironment env) {
+        // If no token is provided, try to get it from the Authorization header
+        if (token == null || token.isEmpty()) {
+            token = extractTokenFromHeader(env);
+        }
         return authService.validateToken(token);
     }
 
     @DgsQuery
-    public UserInfoDto me(@InputArgument String token) {
-        // Parse the token to get user information
+    public UserInfoDto me(@InputArgument(name = "token", collectionType = String.class) String token,
+                          DataFetchingEnvironment env) {
         try {
+            // If no token is provided, try to get it from the Authorization header
+            if (token == null || token.isEmpty()) {
+                token = extractTokenFromHeader(env);
+            }
+
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(jwtSecret.getBytes())
                     .build()
@@ -42,6 +53,7 @@ public class AuthResolver {
             UserInfoDto userInfo = new UserInfoDto();
             userInfo.setId(claims.get("userId", String.class));
             userInfo.setUsername(claims.get("username", String.class));
+
             return userInfo;
         } catch (Exception e) {
             throw new RuntimeException("Invalid token");
@@ -55,7 +67,11 @@ public class AuthResolver {
     }
 
     @DgsMutation
-    public AuthResponseDto logout(@InputArgument String token) {
+    public AuthResponseDto logout(@InputArgument String token, DataFetchingEnvironment env) {
+        // If no token is provided, try to get it from the Authorization header
+        if (token == null || token.isEmpty()) {
+            token = extractTokenFromHeader(env);
+        }
         return authService.logout(token);
     }
 
@@ -75,5 +91,24 @@ public class AuthResolver {
             @InputArgument String password,
             @InputArgument String userId) {
         return authService.createCredentials(username, password, Long.parseLong(userId));
+    }
+
+    private String extractTokenFromHeader(DataFetchingEnvironment env) {
+        // Get current request from RequestContextHolder
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (attributes == null) {
+            throw new RuntimeException("No request context available");
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
+
+        throw new RuntimeException("No token provided");
     }
 }

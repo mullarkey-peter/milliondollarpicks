@@ -1,8 +1,8 @@
 scalar DateTime
 
 type Query {
-    validateToken(token: String!): Boolean
-    me(token: String!): UserInfo
+    validateToken(token: String): Boolean
+    me(token: String): UserInfo
 }
 
 type Mutation {

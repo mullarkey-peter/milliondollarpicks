@@ -17,6 +17,8 @@ spring:
 dgs:
   graphql:
     enabled: true
+    context:
+      builder-enabled: true
   graphiql:
     enabled: true
     path: /graphiql
