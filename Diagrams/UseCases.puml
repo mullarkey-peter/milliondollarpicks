@@ -1,0 +1,52 @@
+@startuml
+' Define the system boundary
+rectangle "Million Dollar Picks System" {
+  ' User use cases
+  usecase "Register Account" as UC1
+  usecase "Login" as UC2
+  usecase "Logout" as UC2a
+  usecase "View Predictions" as UC3
+  usecase "Track Betting History" as UC4
+  usecase "Receive Notifications" as UC5
+
+  ' New betting use cases
+  usecase "Place Bet" as UC7
+  usecase "View Available Betting Options" as UC8
+  usecase "Set Betting Limits" as UC9
+  usecase "Cancel Bet" as UC10
+  usecase "View Current Balance" as UC11
+
+
+}
+
+' Define actors
+actor "User" as User
+actor "Authentication Service" as AuthService
+actor "User Service" as UserService
+actor "Betting Service" as BettingService
+
+' Define relationships
+User --> UC1
+User --> UC2
+User --> UC2a
+User --> UC3
+User --> UC4
+User --> UC5
+
+' New betting relationships
+User --> UC7
+User --> UC8
+
+UC7 ..> BettingService : includes
+UC8 ..> BettingService : includes
+UC9 ..> BettingService : includes
+UC10 ..> BettingService : includes
+UC11 ..> BettingService : includes
+
+AuthService --> UC2
+AuthService --> UC2a
+UC1 ..> UserService : includes
+UC2 ..> AuthService : includes
+UC2a ..> AuthService : includes
+
+@enduml
