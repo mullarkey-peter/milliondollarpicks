@@ -1,32 +1,33 @@
 package com.glizzy.milliondollarpicks.userservice.entity;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("users")
+@Entity
+@Table(name = "users")
 public class User {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column("username")
+    @Column(name = "username", unique = true, nullable = false)
     private String username;
 
-    @Column("password")
-    private String password;
+    @Column(name = "registration_date")
+    private OffsetDateTime registrationDate;
 
-    @Column("registration_date")
-    private LocalDateTime registrationDate;
-
-    @Column("last_login_date")
-    private LocalDateTime lastLoginDate;
-
+    @Column(name = "last_login_date")
+    private OffsetDateTime lastLoginDate;
 }

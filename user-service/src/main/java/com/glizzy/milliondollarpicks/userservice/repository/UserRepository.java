@@ -1,23 +1,23 @@
 package com.glizzy.milliondollarpicks.userservice.repository;
 
 import com.glizzy.milliondollarpicks.userservice.entity.User;
-import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import reactor.core.publisher.Mono;
+import java.util.Optional;
 
 @Repository
-public interface UserRepository extends R2dbcRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * Find a user by their username
      * @param username the username to search for
-     * @return a Mono with the user if found
+     * @return an Optional with the user if found
      */
-    Mono<User> findByUsername(String username);
+    Optional<User> findByUsername(String username);
 
     /**
      * Check if a user with the given username exists
      * @param username the username to check
-     * @return a Mono with true if the user exists, false otherwise
+     * @return true if the user exists, false otherwise
      */
-    Mono<Boolean> existsByUsername(String username);
+    boolean existsByUsername(String username);
 }

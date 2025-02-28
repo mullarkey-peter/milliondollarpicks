@@ -3,92 +3,56 @@ package com.glizzy.milliondollarpicks.userservice.service;
 import com.glizzy.milliondollarpicks.userservice.dto.UserDto;
 import com.glizzy.milliondollarpicks.userservice.entity.User;
 import com.glizzy.milliondollarpicks.userservice.mapper.UserMapper;
-import com.glizzy.milliondollarpicks.userservice.exception.DuplicateUserException;
-import com.glizzy.milliondollarpicks.userservice.exception.InvalidCredentialsException;
 import com.glizzy.milliondollarpicks.userservice.exception.UserNotFoundException;
 import com.glizzy.milliondollarpicks.userservice.repository.UserRepository;
-import com.glizzy.milliondollarpicks.userservice.security.JwtTokenProvider;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.OffsetDateTime;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider tokenProvider;
-    private final Set<String> invalidatedTokens = new HashSet<>();
 
     @Override
-    public Mono<UserDto> findUserByUsername(String username) {
+    @Transactional(readOnly = true)
+    public UserDto findUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .switchIfEmpty(Mono.error(new UserNotFoundException("User not found with username: " + username)))
-                .map(userMapper::toDto);
+                .map(userMapper::toDto)
+                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
     }
 
     @Override
-    public Mono<UserDto> registerUser(String username, String password) {
-        return userRepository.existsByUsername(username)
-                .flatMap(exists -> {
-                    if (Boolean.TRUE.equals(exists)) {
-                        return Mono.error(new DuplicateUserException("Username already exists: " + username));
-                    }
-
-                    // Use the UserDto to create a User entity using the mapper
-                    UserDto userDto = new UserDto();
-                    userDto.setUsername(username);
-                    userDto.setPassword(password); // Mapper will handle encoding
-
-                    // Use the specialized registration mapper
-                    User newUser = userMapper.toRegistrationEntity(userDto);
-                    newUser.setRegistrationDate(LocalDateTime.now());
-
-                    return userRepository.save(newUser)
-                            // Use the registration DTO mapper that excludes password
-                            .map(userMapper::toRegistrationDto);
-                });
+    @Transactional(readOnly = true)
+    public UserDto findUserById(Long id) {
+        return userRepository.findById(id)
+                .map(userMapper::toDto)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
     }
 
     @Override
-    public Mono<String> login(String username, String password) {
+    public UserDto updateLastLogin(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+        
+        user.setLastLoginDate(OffsetDateTime.now());
+        User savedUser = userRepository.save(user);
+        return userMapper.toDto(savedUser);
+    }
+
+    @Override
+    public UserDto createOrUpdateUser(String username) {
         return userRepository.findByUsername(username)
-                .switchIfEmpty(Mono.error(new InvalidCredentialsException("Invalid username or password")))
-                .flatMap(user -> {
-                    if (!passwordEncoder.matches(password, user.getPassword())) {
-                        return Mono.error(new InvalidCredentialsException("Invalid username or password"));
-                    }
-                    user.setLastLoginDate(LocalDateTime.now());
-                    return userRepository.save(user)
-                            .then(generateToken(user.getUsername()));
+                .map(existingUser -> userMapper.toDto(userRepository.save(existingUser)))
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setUsername(username);
+                    newUser.setRegistrationDate(OffsetDateTime.now());
+                    return userMapper.toDto(userRepository.save(newUser));
                 });
-    }
-
-    @Override
-    public Mono<Boolean> logout(String token) {
-        if (token != null && tokenProvider.validateToken(token)) {
-            invalidatedTokens.add(token);
-            return Mono.just(true);
-        }
-        return Mono.just(false);
-    }
-
-    private Mono<String> generateToken(String username) {
-        Authentication authentication = new UsernamePasswordAuthenticationToken(
-                username,
-                null,
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
-        );
-        return Mono.just(tokenProvider.generateToken(authentication));
     }
 }

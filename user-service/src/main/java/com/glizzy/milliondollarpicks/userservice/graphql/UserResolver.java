@@ -1,18 +1,14 @@
 package com.glizzy.milliondollarpicks.userservice.graphql;
 
 import com.glizzy.milliondollarpicks.userservice.dto.UserDto;
-import com.glizzy.milliondollarpicks.userservice.security.JwtTokenProvider;
 import com.glizzy.milliondollarpicks.userservice.service.UserService;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsQuery;
 import com.netflix.graphql.dgs.DgsMutation;
 import com.netflix.graphql.dgs.InputArgument;
-import com.netflix.graphql.dgs.context.DgsContext;
-import graphql.schema.DataFetchingEnvironment;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.security.access.prepost.PreAuthorize;
-import reactor.core.publisher.Mono;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * GraphQL resolver for User-related operations
@@ -21,72 +17,37 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserResolver {
     private final UserService userService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private static final Logger log = LoggerFactory.getLogger(UserResolver.class);
 
     /**
      * Query to fetch user by username
-     * Requires authentication
      */
     @DgsQuery
-    @PreAuthorize("isAuthenticated()")
-    public Mono<UserDto> userByUsername(@InputArgument String username) {
+    public UserDto userByUsername(@InputArgument String username) {
         return userService.findUserByUsername(username);
     }
 
     /**
-     * Query to fetch the current authenticated user
-     * Requires authentication
+     * Query to fetch user by ID
      */
     @DgsQuery
-    @PreAuthorize("isAuthenticated()")
-    public Mono<UserDto> me(DataFetchingEnvironment dfe) {
-        String token = extractToken(dfe);
-        if (token != null) {
-            String username = jwtTokenProvider.getUsernameFromToken(token);
-            return userService.findUserByUsername(username);
-        }
-        return Mono.empty();
+    public UserDto userById(@InputArgument Long id) {
+        return userService.findUserById(id);
     }
 
     /**
-     * Mutation to register a new user
+     * Mutation to update user's last login date
      */
     @DgsMutation
-    public Mono<UserDto> registerUser(@InputArgument String username, @InputArgument String password) {
-        return userService.registerUser(username, password);
+    public UserDto updateLastLogin(@InputArgument String username) {
+        return userService.updateLastLogin(username);
     }
 
     /**
-     * Mutation to log in a user
-     * Returns a JWT token on success
+     * Internal mutation for federation to create/update users
      */
     @DgsMutation
-    public Mono<String> login(@InputArgument String username, @InputArgument String password) {
-        return userService.login(username, password);
-    }
-
-    /**
-     * Mutation to log out a user
-     * Requires authentication
-     */
-    @DgsMutation
-    @PreAuthorize("isAuthenticated()")
-    public Mono<Boolean> logout(DataFetchingEnvironment dfe) {
-        String token = extractToken(dfe);
-        return userService.logout(token);
-    }
-
-    /**
-     * Helper method to extract JWT token from request headers
-     */
-    private String extractToken(DataFetchingEnvironment dfe) {
-        HttpHeaders headers = dfe.getGraphQlContext().get("headers");
-        if (headers != null) {
-            String authHeader = headers.getFirst(HttpHeaders.AUTHORIZATION);
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                return authHeader.substring(7);
-            }
-        }
-        return null;
+    public UserDto createOrUpdateUser(@InputArgument String username) {
+        return userService.createOrUpdateUser(username);
     }
 }

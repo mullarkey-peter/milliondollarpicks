@@ -1,19 +1,18 @@
+scalar DateTime
+
 type Query {
-    me: User
     userById(id: ID!): User
     userByUsername(username: String!): User
 }
 
 type Mutation {
-    registerUser(username: String!, password: String!): User
-    login(username: String!, password: String!): String
-    logout: Boolean
+    updateLastLogin(username: String!): User
+    createOrUpdateUser(username: String!): User
 }
 
 type User {
     id: ID!
     username: String!
-    registrationDate: String!
-    lastLoginDate: String
+    registrationDate: DateTime
+    lastLoginDate: DateTime
 }
-
