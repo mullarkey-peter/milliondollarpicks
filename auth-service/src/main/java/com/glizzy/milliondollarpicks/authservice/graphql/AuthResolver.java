@@ -3,6 +3,7 @@ package com.glizzy.milliondollarpicks.authservice.graphql;
 import com.glizzy.milliondollarpicks.authservice.dto.AuthResponseDto;
 import com.glizzy.milliondollarpicks.authservice.dto.CredentialsDto;
 import com.glizzy.milliondollarpicks.authservice.dto.LoginRequestDto;
+import com.glizzy.milliondollarpicks.authservice.dto.UserInfoDto;
 import com.glizzy.milliondollarpicks.authservice.service.AuthService;
 import com.netflix.graphql.dgs.DgsComponent;
 import com.netflix.graphql.dgs.DgsQuery;
@@ -29,7 +30,7 @@ public class AuthResolver {
     }
 
     @DgsQuery
-    public Map<String, Object> me(@InputArgument String token) {
+    public UserInfoDto me(@InputArgument String token) {
         // Parse the token to get user information
         try {
             Claims claims = Jwts.parserBuilder()
@@ -38,10 +39,10 @@ public class AuthResolver {
                     .parseClaimsJws(token)
                     .getBody();
 
-            return Map.of(
-                    "id", claims.get("userId", String.class),
-                    "username", claims.get("username", String.class)
-            );
+            UserInfoDto userInfo = new UserInfoDto();
+            userInfo.setId(claims.get("userId", String.class));
+            userInfo.setUsername(claims.get("username", String.class));
+            return userInfo;
         } catch (Exception e) {
             throw new RuntimeException("Invalid token");
         }
@@ -72,7 +73,7 @@ public class AuthResolver {
     public CredentialsDto createCredentials(
             @InputArgument String username,
             @InputArgument String password,
-            @InputArgument Long userId) {
-        return authService.createCredentials(username, password, userId);
+            @InputArgument String userId) {
+        return authService.createCredentials(username, password, Long.parseLong(userId));
     }
 }
