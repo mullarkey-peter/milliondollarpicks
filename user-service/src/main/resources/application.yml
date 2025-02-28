@@ -1,0 +1,34 @@
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:userdb}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  flyway:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:userdb}
+    user: ${spring.r2dbc.username}
+    password: ${spring.r2dbc.password}
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  security:
+    basic:
+      enabled: false
+
+jwt:
+  secret: ${JWT_SECRET:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0}
+  expiration: 86400000  # 24 hours in milliseconds
+
+dgs:
+  graphql:
+    enabled: true
+  graphiql:
+    enabled: true
+
+# For debugging
+logging:
+  level:
+    org.springframework.r2dbc: DEBUG
+    io.r2dbc.postgresql: DEBUG
+    org.springframework.beans.factory.support: DEBUG
+    com.netflix.graphql.dgs: DEBUG
+    org.springframework.security: DEBUG
+    com.glizzy.milliondollarpicks: DEBUG

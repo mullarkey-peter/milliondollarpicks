@@ -1,0 +1,19 @@
+type Query {
+    me: User
+    userById(id: ID!): User
+    userByUsername(username: String!): User
+}
+
+type Mutation {
+    registerUser(username: String!, password: String!): User
+    login(username: String!, password: String!): String
+    logout: Boolean
+}
+
+type User {
+    id: ID!
+    username: String!
+    registrationDate: String!
+    lastLoginDate: String
+}
+
