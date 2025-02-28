@@ -17,70 +17,148 @@ import org.springframework.beans.factory.annotation.Value;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @DgsComponent
 @RequiredArgsConstructor
 public class AuthResolver {
     private final AuthService authService;
+    private static final Logger log = LoggerFactory.getLogger(AuthResolver.class);
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
     @DgsQuery
     public Boolean validateToken(@InputArgument String token, DataFetchingEnvironment env) {
-        // If no token is provided, try to get it from the Authorization header
+        log.debug("validateToken called with token parameter present: {}", token != null && !token.isEmpty());
+
         if (token == null || token.isEmpty()) {
-            token = extractTokenFromHeader(env);
+            log.debug("Token is null or empty, attempting to extract from header");
+            try {
+                token = extractTokenFromHeader(env);
+                log.debug("Token extracted from header successfully");
+            } catch (Exception e) {
+                log.error("Failed to extract token from header: {}", e.getMessage());
+                return false;
+            }
         }
-        return authService.validateToken(token);
+
+        boolean isValid = authService.validateToken(token);
+        log.debug("Token validation result: {}", isValid);
+        return isValid;
     }
 
     @DgsQuery
     public UserInfoDto me(@InputArgument(name = "token", collectionType = String.class) String token,
                           DataFetchingEnvironment env) {
+        log.debug("me query called with token parameter present: {}", token != null && !token.isEmpty());
+
         try {
-            // If no token is provided, try to get it from the Authorization header
             if (token == null || token.isEmpty()) {
+                log.debug("Token is null or empty, attempting to extract from header");
                 token = extractTokenFromHeader(env);
+                log.debug("Token extracted from header: {}", token);
             }
 
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(jwtSecret.getBytes())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            log.debug("JWT Secret length: {}", jwtSecret != null ? jwtSecret.length() : "null");
+            log.debug("Attempting to parse token: {}", token);
+
+            Claims claims = null;
+            try {
+                claims = Jwts.parserBuilder()
+                        .setSigningKey(jwtSecret.getBytes())
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody();
+                log.debug("Successfully parsed token");
+            } catch (Exception e) {
+                log.error("Error parsing JWT token: {}", e.getMessage(), e);
+                throw new RuntimeException("Invalid token - parsing error: " + e.getMessage());
+            }
+
+            log.debug("Claims content: {}", claims);
 
             UserInfoDto userInfo = new UserInfoDto();
-            userInfo.setId(claims.get("userId", String.class));
-            userInfo.setUsername(claims.get("username", String.class));
+            try {
+                Object userId = claims.get("userId");
+                log.debug("userId from claims (type: {}): {}",
+                        userId != null ? userId.getClass().getName() : "null", userId);
 
-            return userInfo;
+                userInfo.setId(userId != null ? String.valueOf(userId) : null);
+                log.debug("userId set in userInfo: {}", userInfo.getId());
+
+                String username = claims.get("username", String.class);
+                log.debug("username from claims: {}", username);
+
+                userInfo.setUsername(username);
+                log.debug("userInfo object created successfully: {}", userInfo);
+
+                return userInfo;
+            } catch (Exception e) {
+                log.error("Error extracting claims data: {}", e.getMessage(), e);
+                throw new RuntimeException("Invalid token - claims extraction error: " + e.getMessage());
+            }
         } catch (Exception e) {
-            throw new RuntimeException("Invalid token");
+            log.error("Unexpected error in me query: {}", e.getMessage(), e);
+            throw new RuntimeException("Invalid token: " + e.getMessage());
         }
     }
 
     @DgsMutation
     public AuthResponseDto login(@InputArgument String username, @InputArgument String password) {
+        log.debug("login mutation called for username: {}", username);
+
         LoginRequestDto loginRequest = new LoginRequestDto(username, password);
-        return authService.login(loginRequest);
+
+        try {
+            AuthResponseDto response = authService.login(loginRequest);
+            log.debug("Login response: success={}, userId={}", response.getSuccess(), response.getUserId());
+            if (response.getSuccess()) {
+                log.debug("Generated token length: {}",
+                        response.getToken() != null ? response.getToken().length() : "null");
+            }
+            return response;
+        } catch (Exception e) {
+            log.error("Error during login: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @DgsMutation
     public AuthResponseDto logout(@InputArgument String token, DataFetchingEnvironment env) {
-        // If no token is provided, try to get it from the Authorization header
+        log.debug("logout mutation called with token parameter present: {}", token != null && !token.isEmpty());
+
         if (token == null || token.isEmpty()) {
-            token = extractTokenFromHeader(env);
+            try {
+                token = extractTokenFromHeader(env);
+                log.debug("Token extracted from header");
+            } catch (Exception e) {
+                log.error("Failed to extract token from header: {}", e.getMessage());
+                throw e;
+            }
         }
-        return authService.logout(token);
+
+        try {
+            AuthResponseDto response = authService.logout(token);
+            log.debug("Logout successful: {}", response.getSuccess());
+            return response;
+        } catch (Exception e) {
+            log.error("Error during logout: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     @DgsMutation
     public Boolean resetPassword(@InputArgument String username, @InputArgument String newPassword) {
+        log.debug("resetPassword mutation called for username: {}", username);
+
         try {
             authService.resetPassword(username, newPassword);
+            log.debug("Password reset successful for username: {}", username);
             return true;
         } catch (Exception e) {
+            log.error("Error resetting password: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -90,25 +168,40 @@ public class AuthResolver {
             @InputArgument String username,
             @InputArgument String password,
             @InputArgument String userId) {
-        return authService.createCredentials(username, password, Long.parseLong(userId));
+        log.debug("createCredentials mutation called for username: {}, userId: {}", username, userId);
+
+        try {
+            CredentialsDto credentials = authService.createCredentials(username, password, Long.parseLong(userId));
+            log.debug("Credentials created successfully: id={}, userId={}", credentials.getId(), credentials.getUserId());
+            return credentials;
+        } catch (Exception e) {
+            log.error("Error creating credentials: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private String extractTokenFromHeader(DataFetchingEnvironment env) {
-        // Get current request from RequestContextHolder
+        log.debug("Attempting to extract token from request header");
+
         ServletRequestAttributes attributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-
         if (attributes == null) {
+            log.error("No request context available");
             throw new RuntimeException("No request context available");
         }
 
         HttpServletRequest request = attributes.getRequest();
         String authHeader = request.getHeader("Authorization");
+        log.debug("Authorization header: {}", authHeader != null ?
+                authHeader.substring(0, Math.min(20, authHeader.length())) + "..." : "null");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+            String token = authHeader.substring(7);
+            log.debug("Token extracted from header, length: {}", token.length());
+            return token;
         }
 
+        log.error("No token provided in the Authorization header");
         throw new RuntimeException("No token provided");
     }
 }
