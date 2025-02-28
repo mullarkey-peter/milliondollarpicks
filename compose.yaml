@@ -1,19 +1,39 @@
 services:
-  postgres:
+  userdb:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=userdb
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=userdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - userdb_data:/var/lib/postgresql/data
+      - ./docker-postgresql-init/userdb:/docker-entrypoint-initdb.d #Optional init scripts
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d userdb"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: postgres -c 'max_connections=200'
+
+  authdb:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=authdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - authdb_data:/var/lib/postgresql/data
+      - ./docker-postgresql-init/authdb:/docker-entrypoint-initdb.d #Optional init scripts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: postgres -c 'max_connections=200'
 
   user-service:
     build:
@@ -24,17 +44,41 @@ services:
       - "8081:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_R2DBC_URL=r2dbc:postgresql://postgres:5432/userdb
-      - SPRING_R2DBC_USERNAME=postgres
-      - SPRING_R2DBC_PASSWORD=postgres
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres:5432/userdb
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://userdb:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_FLYWAY_URL=jdbc:postgresql://userdb:5432/userdb
       - SPRING_FLYWAY_USER=postgres
       - SPRING_FLYWAY_PASSWORD=postgres
       - JWT_SECRET=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0
+      - JWT_EXPIRATION=86400000
     depends_on:
-      postgres:
+      userdb:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8082:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://authdb:5432/authdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_FLYWAY_URL=jdbc:postgresql://authdb:5432/authdb
+      - SPRING_FLYWAY_USER=postgres
+      - SPRING_FLYWAY_PASSWORD=postgres
+      - JWT_SECRET=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0
+      - JWT_EXPIRATION=86400000
+    depends_on:
+      authdb:
         condition: service_healthy
 
 volumes:
-  postgres_data:
+  userdb_data:
+    driver: local
+  authdb_data:
     driver: local

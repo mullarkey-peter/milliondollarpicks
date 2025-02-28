@@ -29,12 +29,12 @@ rectangle "3rd Party App" as ThirdPartyApp <<Client>>
 rectangle "GraphQL Federation Gateway" as Gateway
 
 ' Internal Services
-rectangle "User Service\n(Spring WebFlux + DGS)" as UserService <<Service>>
-rectangle "Event Service\n(Spring WebFlux + DGS)" as EventService <<Service>>
-rectangle "Prediction Service\n(Spring WebFlux + DGS)" as PredictionService <<Service>>
-rectangle "Betting Service\n(Spring WebFlux + DGS)" as BettingService <<Service>>
-rectangle "Notification Service\n(Spring WebFlux + DGS)" as NotificationService <<Service>>
-rectangle "Reporting Service\n(Spring WebFlux + DGS)" as ReportingService <<Service>>
+rectangle "User Service\n(Spring + DGS)" as UserService <<Service>>
+rectangle "Event Service\n(Spring + DGS)" as EventService <<Service>>
+rectangle "Prediction Service\n(Spring + DGS)" as PredictionService <<Service>>
+rectangle "Betting Service\n(Spring + DGS)" as BettingService <<Service>>
+rectangle "Notification Service\n(Spring + DGS)" as NotificationService <<Service>>
+rectangle "Reporting Service\n(Spring + DGS)" as ReportingService <<Service>>
 
 ' Data Storage
 database "User DB" as UserDB

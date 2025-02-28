@@ -1,0 +1,40 @@
+scalar DateTime
+
+type Query {
+    validateToken(token: String): Boolean
+    me(token: String): UserInfo
+}
+
+type Mutation {
+    login(username: String!, password: String!): AuthResponse
+    logout(token: String!): AuthResponse
+    resetPassword(username: String!, newPassword: String!): Boolean
+    createCredentials(username: String!, password: String!, userId: ID!): Credentials
+}
+
+type AuthResponse {
+    token: String
+    userId: ID
+    username: String
+    success: Boolean!
+    message: String
+}
+
+type Credentials {
+    id: ID!
+    username: String!
+    userId: ID!
+    accountLocked: Boolean
+}
+
+# Instead of UserReference with @key directive, use a local type
+type UserInfo {
+    id: ID!
+    username: String!
+}
+
+# Keep this commented for later federation use
+# type UserReference @key(fields: "id") {
+#     id: ID!
+#     username: String!
+# }
