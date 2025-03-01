@@ -32,3 +32,7 @@ logging:
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql: TRACE
     com.glizzy.milliondollarpicks: DEBUG
+
+grpc:
+  server:
+    port: 9090
