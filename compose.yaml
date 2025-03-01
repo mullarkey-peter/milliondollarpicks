@@ -9,7 +9,7 @@ services:
       - "5433:5432"
     volumes:
       - userdb_data:/var/lib/postgresql/data
-      - ./docker-postgresql-init/userdb:/docker-entrypoint-initdb.d #Optional init scripts
+      - ./docker-postgresql-init/userdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d userdb"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
       - "5434:5432"
     volumes:
       - authdb_data:/var/lib/postgresql/data
-      - ./docker-postgresql-init/authdb:/docker-entrypoint-initdb.d #Optional init scripts
+      - ./docker-postgresql-init/authdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d authdb"]
       interval: 10s
@@ -37,8 +37,8 @@ services:
 
   user-service:
     build:
-      context: ./user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: user-service/Dockerfile
     container_name: user-service
     ports:
       - "8081:8080"
@@ -58,8 +58,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     ports:
       - "8082:8080"

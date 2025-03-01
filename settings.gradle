@@ -3,3 +3,4 @@ rootProject.name = 'million-dollar-picks'
 
 include 'user-service'
 include 'auth-service'
+include 'shared-proto'

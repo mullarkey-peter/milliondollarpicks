@@ -25,3 +25,7 @@ logging:
     org.hibernate.type.descriptor.sql: TRACE
     com.glizzy.milliondollarpicks: DEBUG
     org.springframework.boot: INFO
+
+grpc:
+  server:
+    port: 9090
