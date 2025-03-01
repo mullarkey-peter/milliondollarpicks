@@ -1,99 +1,175 @@
+# Million Dollar Picks
 
-# Project Title
+## Project Overview
 
-Million Dollar Picks is an application to allow users to compete using fake money based off of Bill Simmons weekly segment on his podcast.
+Million Dollar Picks is a microservices-based application that allows users to compete using fake money, inspired by Bill Simmons' weekly segment on his podcast. The application provides a platform for users to make predictions and track their betting performance in a playful, risk-free environment.
 
+## Architecture
 
-## Acknowledgements
+The project is built using a microservices architecture with the following key components:
 
- - [Awesome Readme Templates](https://awesomeopensource.com/project/elangosundar/awesome-README-templates)
- - [Awesome README](https://github.com/matiassingers/awesome-readme)
- - [How to write a Good readme](https://bulldogjob.com/news/449-how-to-write-a-good-readme-for-your-github-project)
+### Services
+- **Auth Service**: Handles user authentication and authorization
+- **User Service**: Manages user profiles and registration
+- **Planned Future Services**:
+    - Event Service
+    - Prediction Service
+    - Betting Service
+    - Notification Service
+    - Reporting Service
 
+### Key Technologies
+- Spring Boot
+- Java 17
+- PostgreSQL
+- GraphQL (Netflix DGS)
+- gRPC
+- Docker Compose
+- Gradle
 
-## API Reference
+### Key Features
+- Secure JWT-based authentication
+- GraphQL API
+- Microservices communication via gRPC
+- Database migrations with Flyway
 
-#### Get all items
+## Prerequisites
 
-```http
-  GET /api/items
-```
+- Docker
+- Docker Compose
+- Java 17
+- Gradle 8.x
 
-| Parameter | Type     | Description                |
-| :-------- | :------- | :------------------------- |
-| `api_key` | `string` | **Required**. Your API key |
+## Getting Started
 
-#### Get item
-
-```http
-  GET /api/items/${id}
-```
-
-| Parameter | Type     | Description                       |
-| :-------- | :------- | :-------------------------------- |
-| `id`      | `string` | **Required**. Id of item to fetch |
-
-#### add(num1, num2)
-
-Takes two numbers and returns the sum.
-
-
-## Authors
-
-- [@mullarkey-peter](https://www.github.com/octokatherine)
-
-
-## Deployment
-
-To deploy this project run
+### Clone the Repository
 
 ```bash
-  npm run deploy
+git clone https://github.com/your-username/million-dollar-picks.git
+cd million-dollar-picks
 ```
 
+### Running the Application
 
-## Environment Variables
-
-To run this project, you will need to add the following environment variables to your .env file
-
-`API_KEY`
-
-`ANOTHER_API_KEY`
-
-
-## Documentation
-
-[Documentation](https://linktodocumentation)
-
-
-## Run Locally
-
-Clone the project
+#### Using Docker Compose
 
 ```bash
-  git clone https://link-to-project
+# Build and start all services
+docker-compose up --build
+
+# To stop the services
+docker-compose down
 ```
 
-Go to the project directory
+#### Local Development
+
+1. Start PostgreSQL databases
+    - Auth DB: Port 5434
+    - User DB: Port 5433
+
+2. Set up environment variables
+   Create a `.env` file with:
+   ```
+   DB_USERNAME=postgres
+   DB_PASSWORD=postgres
+   JWT_SECRET=your-secret-key
+   JWT_EXPIRATION=86400000
+   ```
+
+3. Run individual services
+   ```bash
+   # Auth Service
+   cd auth-service
+   ./gradlew bootRun
+
+   # User Service
+   cd user-service
+   ./gradlew bootRun
+   ```
+
+## API Access
+
+- **GraphiQL Endpoints**:
+    - Auth Service: `http://localhost:8082/graphiql`
+    - User Service: `http://localhost:8081/graphiql`
+
+### Authentication Workflow
+
+1. Create Credentials
+   ```graphql
+   mutation {
+     createCredentials(
+       username: "testuser", 
+       password: "password", 
+       userId: "1"
+     )
+   }
+   ```
+
+2. Login
+   ```graphql
+   mutation {
+     login(username: "testuser", password: "password") {
+       token
+       userId
+       success
+     }
+   }
+   ```
+
+## Development
+
+### Building the Project
 
 ```bash
-  cd my-project
+# Build all services
+./gradlew build
+
+# Build a specific service
+./gradlew :auth-service:build
+./gradlew :user-service:build
 ```
 
-Install dependencies
+### Running Tests
 
 ```bash
-  npm install
+# Run tests for all services
+./gradlew test
+
+# Run tests for a specific service
+./gradlew :auth-service:test
+./gradlew :user-service:test
 ```
 
-Start the server
+## Deployment Considerations
 
-```bash
-  npm run start
-```
+- Use environment-specific configuration files
+- Implement proper secret management
+- Configure monitoring and logging
+- Set up CI/CD pipelines
 
+## Future Roadmap
 
-## Demo
+- [ ] Add more microservices
+- [ ] Implement comprehensive betting logic
+- [ ] Add real-time notifications
+- [ ] Create frontend applications
+- [ ] Implement advanced prediction algorithms
 
-Insert gif or link to demo
+## Contributing
 
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## Contact
+
+Your Name - [your-email@example.com](mailto:your-email@example.com)
+
+Project Link: [https://github.com/your-username/million-dollar-picks](https://github.com/your-username/million-dollar-picks)
